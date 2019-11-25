@@ -1,81 +1,69 @@
+/*
+ * Copyright (C) 2013 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.example.egr304projectapp;
 
-import androidx.appcompat.app.AppCompatActivity;
-
-import android.Manifest;
-import android.app.AlertDialog;
-import android.app.ListActivity;
-import android.app.Service;
-import android.bluetooth.BluetoothAdapter;
-import android.bluetooth.BluetoothDevice;
-import android.bluetooth.BluetoothGatt;
-import android.bluetooth.BluetoothGattCallback;
+import android.app.Activity;
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattService;
-import android.bluetooth.BluetoothManager;
-import android.bluetooth.BluetoothProfile;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
-import android.content.pm.PackageManager;
-import android.graphics.Color;
-import android.os.Binder;
 import android.os.Bundle;
-import android.os.Handler;
 import android.os.IBinder;
 import android.util.Log;
-import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.ViewGroup;
-import android.view.animation.Animation;
-import android.view.animation.PathInterpolator;
-import android.view.animation.RotateAnimation;
-import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
-import android.widget.BaseAdapter;
 import android.widget.ExpandableListView;
-import android.widget.ImageView;
 import android.widget.SimpleExpandableListAdapter;
-import android.widget.Spinner;
-import android.widget.SpinnerAdapter;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.UUID;
 
-public class MainActivity extends AppCompatActivity {
+/**
+ * For a given BLE device, this Activity provides the user interface to connect, display data,
+ * and display GATT services and characteristics supported by the device.  The Activity
+ * communicates with {@code BluetoothLeService}, which in turn interacts with the
+ * Bluetooth LE API.
+ */
+public class DeviceControlActivity extends Activity {
     private final static String TAG = DeviceControlActivity.class.getSimpleName();
 
     public static final String EXTRAS_DEVICE_NAME = "DEVICE_NAME";
     public static final String EXTRAS_DEVICE_ADDRESS = "DEVICE_ADDRESS";
 
-    private String mDeviceAddress;
-    private String mDeviceName;
     private TextView mConnectionState;
-    private static BluetoothDevice device;
-    private BluetoothLeService mBluetoothLeService;
-    private static BluetoothManager bluetoothManager;
-    private static BluetoothAdapter bluetoothAdapter;
-    private static BluetoothGatt bluetoothGatt;
-    private boolean mConnected = false;
-    private BluetoothGattCharacteristic mNotifyCharacteristic;
     private TextView mDataField;
+    private String mDeviceName;
+    private String mDeviceAddress;
     private ExpandableListView mGattServicesList;
+    private BluetoothLeService mBluetoothLeService;
     private ArrayList<ArrayList<BluetoothGattCharacteristic>> mGattCharacteristics =
             new ArrayList<ArrayList<BluetoothGattCharacteristic>>();
+    private boolean mConnected = false;
+    private BluetoothGattCharacteristic mNotifyCharacteristic;
 
     private final String LIST_NAME = "NAME";
     private final String LIST_UUID = "UUID";
-
 
     // Code to manage Service lifecycle.
     private final ServiceConnection mServiceConnection = new ServiceConnection() {
@@ -97,6 +85,12 @@ public class MainActivity extends AppCompatActivity {
         }
     };
 
+    // Handles various events fired by the Service.
+    // ACTION_GATT_CONNECTED: connected to a GATT server.
+    // ACTION_GATT_DISCONNECTED: disconnected from a GATT server.
+    // ACTION_GATT_SERVICES_DISCOVERED: discovered GATT services.
+    // ACTION_DATA_AVAILABLE: received data from the device.  This can be a result of read
+    //                        or notification operations.
     private final BroadcastReceiver mGattUpdateReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -119,6 +113,10 @@ public class MainActivity extends AppCompatActivity {
         }
     };
 
+    // If a given GATT characteristic is selected, check for supported features.  This sample
+    // demonstrates 'Read' and 'Notify' features.  See
+    // http://d.android.com/reference/android/bluetooth/BluetoothGatt.html for the complete
+    // list of supported characteristic features.
     private final ExpandableListView.OnChildClickListener servicesListClickListner =
             new ExpandableListView.OnChildClickListener() {
                 @Override
@@ -147,7 +145,7 @@ public class MainActivity extends AppCompatActivity {
                     }
                     return false;
                 }
-            };
+    };
 
     private void clearUI() {
         mGattServicesList.setAdapter((SimpleExpandableListAdapter) null);
@@ -155,76 +153,25 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
-        getSupportActionBar().hide();
+        //setContentView(R.layout.gatt_services_characteristics);
 
         final Intent intent = getIntent();
         mDeviceName = intent.getStringExtra(EXTRAS_DEVICE_NAME);
         mDeviceAddress = intent.getStringExtra(EXTRAS_DEVICE_ADDRESS);
 
+        // Sets up UI references.
+        //((TextView) findViewById(R.id.device_address)).setText(mDeviceAddress);
+        //mGattServicesList = (ExpandableListView) findViewById(R.id.gatt_services_list);
+        //mGattServicesList.setOnChildClickListener(servicesListClickListner);
+        //mConnectionState = (TextView) findViewById(R.id.connection_state);
+        //mDataField = (TextView) findViewById(R.id.data_value);
+
+        //getActionBar().setTitle(mDeviceName);
+        //getActionBar().setDisplayHomeAsUpEnabled(true);
         Intent gattServiceIntent = new Intent(this, BluetoothLeService.class);
         bindService(gattServiceIntent, mServiceConnection, BIND_AUTO_CREATE);
-
-        // Bluetooth initialization stuff
-        mDeviceAddress = getIntent().getStringExtra(getString(R.string.device_address));
-        registerReceiver(mGattUpdateReceiver, makeGattUpdateIntentFilter());
-        if (mBluetoothLeService != null) {
-            final boolean result = mBluetoothLeService.connect(mDeviceAddress);
-            Log.d("Bluetooth Result", "Connect request result=" + result);
-        }
-
-        String data = gattServiceIntent.getStringExtra("com.example.bluetooth.le.EXTRA_DATA");
-
-        // GUI initialization stuff
-        Spinner hourDropDown = (Spinner) findViewById(R.id.hourDropDown);
-        ArrayAdapter adapter = ArrayAdapter.createFromResource(this,
-                R.array.hourArray, R.layout.spinner_item);
-
-        adapter.setDropDownViewResource(R.layout.spinner_dropdown_item);
-        hourDropDown.setAdapter(adapter);
-
-        Spinner minuteDropDown = (Spinner) findViewById(R.id.minuteDropDown);
-        adapter = ArrayAdapter.createFromResource(this,
-                R.array.minuteArray, R.layout.spinner_item);
-
-        adapter.setDropDownViewResource(R.layout.spinner_dropdown_item);
-        minuteDropDown.setAdapter(adapter);
-
-        Spinner meridiemDropDown = (Spinner) findViewById(R.id.meridiemDropDown);
-        adapter = ArrayAdapter.createFromResource(this,
-                R.array.meridiemArray, R.layout.spinner_item);
-
-        adapter.setDropDownViewResource(R.layout.spinner_dropdown_item);
-        meridiemDropDown.setAdapter(adapter);
-
-        Spinner temperatureDropDown = (Spinner) findViewById(R.id.temperatureDropDown);
-        adapter = ArrayAdapter.createFromResource(this,
-                R.array.temperatureArray, R.layout.spinner_item);
-
-        adapter.setDropDownViewResource(R.layout.spinner_dropdown_item);
-        temperatureDropDown.setAdapter(adapter);
-
-        TextView temperatureDisplay = (TextView) findViewById(R.id.temperatureDisplay);
-        temperatureDisplay.setText("73.4 °F");
-        temperatureDisplay.setText(data);
-        temperatureDisplay.setText(mDeviceAddress);
-    }
-
-    private String [] getStringArray (int range, int interval, String firstValue) {
-        String [] value = {firstValue};
-        for (int initialValue = interval - 1; initialValue < range; initialValue += interval) {
-            String [] tempValue = value;
-            value = new String [value.length + 1];
-            for (int index = 0; index < value.length; ++index) {
-                if (index < tempValue.length)
-                    value [index] = tempValue [index];
-                else value [index] = String.valueOf(initialValue + 1);
-            }
-        }
-
-        return value;
     }
 
     @Override
@@ -261,7 +208,6 @@ public class MainActivity extends AppCompatActivity {
             //menu.findItem(R.id.menu_disconnect).setVisible(false);
         }
         return true;
-        //return super.onOptionsItemSelected(item);
     }
 
     @Override
@@ -279,6 +225,7 @@ public class MainActivity extends AppCompatActivity {
         }*/
         mBluetoothLeService.connect(mDeviceAddress);
         return true;
+        //return super.onOptionsItemSelected(item);
     }
 
     private void updateConnectionState(final int resourceId) {
@@ -292,10 +239,13 @@ public class MainActivity extends AppCompatActivity {
 
     private void displayData(String data) {
         if (data != null) {
-            //mDataField.setText(data);
+            mDataField.setText(data);
         }
     }
 
+    // Demonstrates how to iterate through the supported GATT Services/Characteristics.
+    // In this sample, we populate the data structure that is bound to the ExpandableListView
+    // on the UI.
     private void displayGattServices(List<BluetoothGattService> gattServices) {
         if (gattServices == null) return;
         String uuid = null;
@@ -358,5 +308,4 @@ public class MainActivity extends AppCompatActivity {
         intentFilter.addAction(BluetoothLeService.ACTION_DATA_AVAILABLE);
         return intentFilter;
     }
-
 }
