@@ -76,6 +76,10 @@ public class MainActivity extends AppCompatActivity {
     private final String LIST_NAME = "NAME";
     private final String LIST_UUID = "UUID";
 
+    TextView temperatureDisplay;
+    Spinner temperatureDropDown;
+    ImageView startImage;
+
 
     // Code to manage Service lifecycle.
     private final ServiceConnection mServiceConnection = new ServiceConnection() {
@@ -114,7 +118,8 @@ public class MainActivity extends AppCompatActivity {
                 // Show all the supported services and characteristics on the user interface.
                 displayGattServices(mBluetoothLeService.getSupportedGattServices());
             } else if (BluetoothLeService.ACTION_DATA_AVAILABLE.equals(action)) {
-                displayData(intent.getStringExtra(BluetoothLeService.EXTRA_DATA));
+                String temperature = intent.getStringExtra(BluetoothLeService.EXTRA_DATA);
+                temperatureDisplay.setText(temperature + " °F");
             }
         }
     };
@@ -199,17 +204,16 @@ public class MainActivity extends AppCompatActivity {
         adapter.setDropDownViewResource(R.layout.spinner_dropdown_item);
         meridiemDropDown.setAdapter(adapter);
 
-        Spinner temperatureDropDown = (Spinner) findViewById(R.id.temperatureDropDown);
+        startImage = (ImageView) findViewById(R.id.startButtonBack);
+
+        temperatureDropDown = (Spinner) findViewById(R.id.temperatureDropDown);
         adapter = ArrayAdapter.createFromResource(this,
                 R.array.temperatureArray, R.layout.spinner_item);
 
         adapter.setDropDownViewResource(R.layout.spinner_dropdown_item);
         temperatureDropDown.setAdapter(adapter);
 
-        TextView temperatureDisplay = (TextView) findViewById(R.id.temperatureDisplay);
-        temperatureDisplay.setText("73.4 °F");
-        temperatureDisplay.setText(data);
-        temperatureDisplay.setText(mDeviceAddress);
+        temperatureDisplay = (TextView) findViewById(R.id.temperatureDisplay);
     }
 
     private String [] getStringArray (int range, int interval, String firstValue) {
@@ -358,5 +362,4 @@ public class MainActivity extends AppCompatActivity {
         intentFilter.addAction(BluetoothLeService.ACTION_DATA_AVAILABLE);
         return intentFilter;
     }
-
 }

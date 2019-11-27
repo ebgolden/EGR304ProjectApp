@@ -25,19 +25,32 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.animation.Animation;
+import android.view.animation.PathInterpolator;
+import android.view.animation.RotateAnimation;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.ExpandableListView;
+import android.widget.ImageView;
 import android.widget.SimpleExpandableListAdapter;
+import android.widget.Spinner;
 import android.widget.TextView;
+import android.widget.TwoLineListItem;
 
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+
+import static android.view.View.GONE;
 
 /**
  * For a given BLE device, this Activity provides the user interface to connect, display data,
@@ -64,6 +77,14 @@ public class DeviceControlActivity extends Activity {
 
     private final String LIST_NAME = "NAME";
     private final String LIST_UUID = "UUID";
+
+    private TextView temperatureDisplay;
+    private Spinner temperatureDropDown;
+    private Spinner hourDropDown;
+    private Spinner minuteDropDown;
+    private Spinner meridiemDropDown;
+    private ImageView startBackImage;
+    private ImageView startFrontImage;
 
     // Code to manage Service lifecycle.
     private final ServiceConnection mServiceConnection = new ServiceConnection() {
@@ -98,6 +119,7 @@ public class DeviceControlActivity extends Activity {
             if (BluetoothLeService.ACTION_GATT_CONNECTED.equals(action)) {
                 mConnected = true;
                 updateConnectionState(R.string.connected);
+                displayData(intent.getStringExtra(BluetoothLeService.EXTRA_DATA));
                 invalidateOptionsMenu();
             } else if (BluetoothLeService.ACTION_GATT_DISCONNECTED.equals(action)) {
                 mConnected = false;
@@ -122,7 +144,9 @@ public class DeviceControlActivity extends Activity {
                 @Override
                 public boolean onChildClick(ExpandableListView parent, View v, int groupPosition,
                                             int childPosition, long id) {
+                    System.out.println("HELLO THERE");
                     if (mGattCharacteristics != null) {
+                        System.out.println("WOW: " + String.valueOf(id));
                         final BluetoothGattCharacteristic characteristic =
                                 mGattCharacteristics.get(groupPosition).get(childPosition);
                         final int charaProp = characteristic.getProperties();
@@ -145,33 +169,124 @@ public class DeviceControlActivity extends Activity {
                     }
                     return false;
                 }
-    };
+            };
 
     private void clearUI() {
         mGattServicesList.setAdapter((SimpleExpandableListAdapter) null);
-        mDataField.setText(R.string.no_data);
+        //mDataField.setText(R.string.no_data);
     }
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        //setContentView(R.layout.gatt_services_characteristics);
+        setContentView(R.layout.activity_main);
 
         final Intent intent = getIntent();
         mDeviceName = intent.getStringExtra(EXTRAS_DEVICE_NAME);
         mDeviceAddress = intent.getStringExtra(EXTRAS_DEVICE_ADDRESS);
 
         // Sets up UI references.
-        //((TextView) findViewById(R.id.device_address)).setText(mDeviceAddress);
-        //mGattServicesList = (ExpandableListView) findViewById(R.id.gatt_services_list);
-        //mGattServicesList.setOnChildClickListener(servicesListClickListner);
-        //mConnectionState = (TextView) findViewById(R.id.connection_state);
-        //mDataField = (TextView) findViewById(R.id.data_value);
+        mGattServicesList = (ExpandableListView) findViewById(R.id.gatt_services_list);
+        mGattServicesList.setOnChildClickListener(servicesListClickListner);
+        mGattServicesList.setVisibility(GONE);
 
-        //getActionBar().setTitle(mDeviceName);
-        //getActionBar().setDisplayHomeAsUpEnabled(true);
         Intent gattServiceIntent = new Intent(this, BluetoothLeService.class);
         bindService(gattServiceIntent, mServiceConnection, BIND_AUTO_CREATE);
+
+        // GUI initialization stuff
+        hourDropDown = (Spinner) findViewById(R.id.hourDropDown);
+        ArrayAdapter adapter = ArrayAdapter.createFromResource(this,
+                R.array.hourArray, R.layout.spinner_item);
+
+        adapter.setDropDownViewResource(R.layout.spinner_dropdown_item);
+        hourDropDown.setAdapter(adapter);
+
+        minuteDropDown = (Spinner) findViewById(R.id.minuteDropDown);
+        adapter = ArrayAdapter.createFromResource(this,
+                R.array.minuteArray, R.layout.spinner_item);
+
+        adapter.setDropDownViewResource(R.layout.spinner_dropdown_item);
+        minuteDropDown.setAdapter(adapter);
+
+        meridiemDropDown = (Spinner) findViewById(R.id.meridiemDropDown);
+        adapter = ArrayAdapter.createFromResource(this,
+                R.array.meridiemArray, R.layout.spinner_item);
+
+        adapter.setDropDownViewResource(R.layout.spinner_dropdown_item);
+        meridiemDropDown.setAdapter(adapter);
+
+        startBackImage = (ImageView) findViewById(R.id.startButtonBack);
+        startFrontImage = (ImageView) findViewById(R.id.startButtonFront);
+
+        temperatureDropDown = (Spinner) findViewById(R.id.temperatureDropDown);
+        adapter = ArrayAdapter.createFromResource(this,
+                R.array.temperatureArray, R.layout.spinner_item);
+
+        adapter.setDropDownViewResource(R.layout.spinner_dropdown_item);
+        temperatureDropDown.setAdapter(adapter);
+
+        temperatureDisplay = (TextView) findViewById(R.id.temperatureDisplay);
+        temperatureDisplay.setText("-----");
+
+        temperatureDropDown.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            public void onItemSelected(AdapterView<?> parent, View view, int pos, long id) {
+                if (temperatureDropDown.getSelectedItem().toString().equals("Cool")) {
+                    startBackImage.setColorFilter(Color.argb(1, 0, 148, 254));
+                } else {
+                    startBackImage.setColorFilter(Color.RED);
+                }
+            }
+            public void onNothingSelected(AdapterView<?> parent) {
+            }
+        });
+
+        startFrontImage.setOnClickListener(new AdapterView.OnClickListener() {
+            public void onClick(View view) {
+                int direction = 1;
+                int hour = 1;
+                int minute = 0;
+                int meridiem = 0;
+                if (temperatureDropDown.getSelectedItem().toString().equals("Cool"))
+                    direction = 1;
+                else direction = 2;
+                hour = Integer.parseInt(hourDropDown.getSelectedItem().toString());
+                String rawMinute = minuteDropDown.getSelectedItem().toString();
+                if(rawMinute.charAt(0) == '0') rawMinute = rawMinute.substring(1);
+                minute = Integer.parseInt(rawMinute);
+                if (meridiemDropDown.getSelectedItem().toString().equals("AM"))
+                    meridiem = 0;
+                else meridiem = 1;
+
+                Calendar calendar = Calendar.getInstance();
+
+                if ((meridiem == 1 && hour != 12)) hour += 12;
+                if ((meridiem == 0 && hour == 12)) hour = 24;
+
+                int currentHour = calendar.get(Calendar.HOUR_OF_DAY);
+                int currentMinute = calendar.get(Calendar.MINUTE);
+
+                int rawTime = hour * 60 + minute;
+                int rawCurrentTime = currentHour * 60 + currentMinute;
+
+                int rawTimeToEllapse = rawTime - rawCurrentTime;
+                int hourToEllapse = rawTimeToEllapse / 60;
+                int minuteToEllapse = rawTimeToEllapse % 60;
+
+                int numberToSend = direction * 100000 + hourToEllapse * 1000 + minuteToEllapse * 10 + meridiem;
+                System.out.println("DIZ STUFF: " + String.valueOf(numberToSend));
+                mBluetoothLeService.send(numberToSend);
+                ImageView rotate_image =(ImageView) findViewById(R.id.startButtonBack);
+                RotateAnimation rotate = new RotateAnimation(0, 360, Animation.RELATIVE_TO_SELF, 0.5f,  Animation.RELATIVE_TO_SELF, 0.5f);
+                rotate.setDuration(1000);
+                //CycleInterpolator cycle = new CycleInterpolator(2f);
+                rotate.setRepeatCount(Animation.INFINITE);
+                rotate.setInterpolator(new PathInterpolator(1f, 1f));
+                rotate_image.startAnimation(rotate);
+
+            }
+            public void onNothingSelected(AdapterView<?> parent) {
+            }
+        });
     }
 
     @Override
@@ -199,33 +314,17 @@ public class DeviceControlActivity extends Activity {
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        //getMenuInflater().inflate(R.menu.gatt_services, menu);
         if (mConnected) {
-            //menu.findItem(R.id.menu_connect).setVisible(false);
-            //menu.findItem(R.id.menu_disconnect).setVisible(true);
         } else {
-            //menu.findItem(R.id.menu_connect).setVisible(true);
-            //menu.findItem(R.id.menu_disconnect).setVisible(false);
         }
         return true;
     }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        /*switch(item.getItemId()) {
-            case R.id.menu_connect:
-                mBluetoothLeService.connect(mDeviceAddress);
-                return true;
-            case R.id.menu_disconnect:
-                mBluetoothLeService.disconnect();
-                return true;
-            case android.R.id.home:
-                onBackPressed();
-                return true;
-        }*/
-        mBluetoothLeService.connect(mDeviceAddress);
-        return true;
-        //return super.onOptionsItemSelected(item);
+        switch(item.getItemId()) {
+        }
+        return super.onOptionsItemSelected(item);
     }
 
     private void updateConnectionState(final int resourceId) {
@@ -239,7 +338,7 @@ public class DeviceControlActivity extends Activity {
 
     private void displayData(String data) {
         if (data != null) {
-            mDataField.setText(data);
+            temperatureDisplay.setText(data + " °F");
         }
     }
 
@@ -297,7 +396,27 @@ public class DeviceControlActivity extends Activity {
                 new String[] {LIST_NAME, LIST_UUID},
                 new int[] { android.R.id.text1, android.R.id.text2 }
         );
-        //mGattServicesList.setAdapter(gattServiceAdapter);
+        mGattServicesList.setAdapter(gattServiceAdapter);
+        if (mGattCharacteristics != null) {
+            final BluetoothGattCharacteristic characteristic =
+                    mGattCharacteristics.get(2).get(0);
+            final int charaProp = characteristic.getProperties();
+            if ((charaProp | BluetoothGattCharacteristic.PROPERTY_READ) > 0) {
+                // If there is an active notification on a characteristic, clear
+                // it first so it doesn't update the data field on the user interface.
+                if (mNotifyCharacteristic != null) {
+                    mBluetoothLeService.setCharacteristicNotification(
+                            mNotifyCharacteristic, false);
+                    mNotifyCharacteristic = null;
+                }
+                mBluetoothLeService.readCharacteristic(characteristic);
+            }
+            if ((charaProp | BluetoothGattCharacteristic.PROPERTY_NOTIFY) > 0) {
+                mNotifyCharacteristic = characteristic;
+                mBluetoothLeService.setCharacteristicNotification(
+                        characteristic, true);
+            }
+        }
     }
 
     private static IntentFilter makeGattUpdateIntentFilter() {

@@ -63,9 +63,10 @@ public class BluetoothLeService extends Service {
     public final static String EXTRA_DATA =
             "com.example.bluetooth.le.EXTRA_DATA";
 
-    public final static UUID UUID_TEMPERATURE_MEASUREMENT =
-            UUID.fromString("00002a6E-0000-1000-8000-00805f9b34fb");
-    public final static String CLIENT_CHARACTERISTIC_CONFIG = "00002902-0000-1000-8000-00805f9b34fb";
+    public final static UUID UUID_HEART_RATE_MEASUREMENT =
+            UUID.fromString(SampleGattAttributes.HEART_RATE_MEASUREMENT);
+
+    private static BluetoothGattCharacteristic characteristicToSendTo;
 
     // Implements callback methods for GATT events that the app cares about.  For example,
     // connection change and services discovered.
@@ -123,17 +124,24 @@ public class BluetoothLeService extends Service {
     private void broadcastUpdate(final String action,
                                  final BluetoothGattCharacteristic characteristic) {
         final Intent intent = new Intent(action);
+        characteristicToSendTo = characteristic;
 
         // This is special handling for the Heart Rate Measurement profile.  Data parsing is
         // carried out as per profile specifications:
         // http://developer.bluetooth.org/gatt/characteristics/Pages/CharacteristicViewer.aspx?u=org.bluetooth.characteristic.heart_rate_measurement.xml
-        if (UUID_TEMPERATURE_MEASUREMENT.equals(characteristic.getUuid())) {
+        if (UUID_HEART_RATE_MEASUREMENT.equals(characteristic.getUuid())) {
             int flag = characteristic.getProperties();
-            int format = BluetoothGattCharacteristic.FORMAT_SINT16;
-            Log.d(TAG, "Heart rate format UINT8.");
-            final double temperature = characteristic.getFloatValue(format, 1);
-            Log.d(TAG, String.format("Received temperature: %f", temperature));
-            intent.putExtra(EXTRA_DATA, String.valueOf(temperature));
+            int format = -1;
+            if ((flag & 0x01) != 0) {
+                format = BluetoothGattCharacteristic.FORMAT_UINT16;
+                Log.d(TAG, "Heart rate format UINT16.");
+            } else {
+                format = BluetoothGattCharacteristic.FORMAT_UINT8;
+                Log.d(TAG, "Heart rate format UINT8.");
+            }
+            final int heartRate = characteristic.getIntValue(format, 1);
+            Log.d(TAG, String.format("Received heart rate: %d", heartRate));
+            intent.putExtra(EXTRA_DATA, String.valueOf(heartRate));
         } else {
             // For all other profiles, writes the data formatted in HEX.
             final byte[] data = characteristic.getValue();
@@ -292,9 +300,9 @@ public class BluetoothLeService extends Service {
         mBluetoothGatt.setCharacteristicNotification(characteristic, enabled);
 
         // This is specific to Heart Rate Measurement.
-        if (UUID_TEMPERATURE_MEASUREMENT.equals(characteristic.getUuid())) {
+        if (UUID_HEART_RATE_MEASUREMENT.equals(characteristic.getUuid())) {
             BluetoothGattDescriptor descriptor = characteristic.getDescriptor(
-                    UUID.fromString(CLIENT_CHARACTERISTIC_CONFIG));
+                    UUID.fromString(SampleGattAttributes.CLIENT_CHARACTERISTIC_CONFIG));
             descriptor.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
             mBluetoothGatt.writeDescriptor(descriptor);
         }
@@ -310,5 +318,79 @@ public class BluetoothLeService extends Service {
         if (mBluetoothGatt == null) return null;
 
         return mBluetoothGatt.getServices();
+    }
+
+    public boolean send(final int data) {
+        boolean writeSucceeded = false;
+        Thread myThread = new Thread() {
+            @Override
+            public void run() {
+                if (mBluetoothGatt == null) {
+                    Log.w(TAG, "BluetoothGatt not initialized");
+                    interrupt();
+                }
+                BluetoothGattService alertService = mBluetoothGatt.getService(UUID.fromString(SampleGattAttributes.IMMEDIATE_ALERT_UUID));
+                BluetoothGattCharacteristic alertLevel = alertService.getCharacteristic(UUID.fromString(SampleGattAttributes.ALERT_LEVEL_UUID));
+
+                if (alertLevel == null) {
+                    Log.w(TAG, "Send characteristic not found");
+                    interrupt();
+                }
+
+                String dataBinary = binary(data);
+                System.out.println("YEET - " + String.valueOf(dataBinary));
+                String dataString = String.valueOf(dataBinary);
+
+                for (int numberIndex = 0; numberIndex < dataString.length(); ++numberIndex) {
+                    try {
+                        int number = Integer.parseInt(String.valueOf(dataString.charAt(numberIndex)));
+                        System.out.println("YEET - " + String.valueOf(numberIndex) + ": " + String.valueOf(number));
+                        alertLevel.setValue(number, BluetoothGattCharacteristic.FORMAT_UINT8, 0);
+                        mBluetoothGatt.writeCharacteristic(alertLevel);
+
+                        sleep(500);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+
+                try {
+                    System.out.println("YEET - " + String.valueOf(dataString.length()) + ": " + String.valueOf(2));
+                    alertLevel.setValue(2, BluetoothGattCharacteristic.FORMAT_UINT8, 0);
+                    mBluetoothGatt.writeCharacteristic(alertLevel);
+
+                    sleep(500);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        };
+        myThread.start();
+
+        /*int format = BluetoothGattCharacteristic.FORMAT_UINT8;
+        characteristicToSendTo.setValue(data, format, 3);
+        characteristicToSendTo.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE);
+        System.out.println("DID IT");
+        return mBluetoothGatt.writeCharacteristic(characteristicToSendTo);*/
+
+        return writeSucceeded;
+    }
+
+    private String binary(int decimal) {
+
+        int count = 0, a;
+        String x = "";
+        while(decimal > 0)
+        {
+            a = decimal % 2;
+            if(a == 1)
+            {
+                count++;
+            }
+            x = a + "" + x;
+            decimal = decimal / 2;
+        }
+
+        return x;
     }
 }

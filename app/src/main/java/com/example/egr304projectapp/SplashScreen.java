@@ -77,7 +77,7 @@ public class SplashScreen extends AppCompatActivity {
             requestPermissions(new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, PERMISSION_REQUEST_COARSE_LOCATION);
 
         //intent = new Intent(getApplicationContext(), MainActivity.class);
-        intent = new Intent(getApplicationContext(), MainActivity.class);
+        intent = new Intent(getApplicationContext(), DeviceControlActivity.class);
 
         scanLeDevice(true);
 
