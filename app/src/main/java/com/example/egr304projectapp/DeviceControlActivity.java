@@ -1,19 +1,3 @@
-/*
- * Copyright (C) 2013 The Android Open Source Project
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package com.example.egr304projectapp;
 
 import android.app.Activity;
@@ -42,11 +26,9 @@ import android.widget.ImageView;
 import android.widget.SimpleExpandableListAdapter;
 import android.widget.Spinner;
 import android.widget.TextView;
-import android.widget.TwoLineListItem;
 
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 
@@ -129,9 +111,8 @@ public class DeviceControlActivity extends Activity {
             } else if (BluetoothLeService.ACTION_GATT_SERVICES_DISCOVERED.equals(action)) {
                 // Show all the supported services and characteristics on the user interface.
                 displayGattServices(mBluetoothLeService.getSupportedGattServices());
-            } else if (BluetoothLeService.ACTION_DATA_AVAILABLE.equals(action)) {
+            } else if (BluetoothLeService.ACTION_DATA_AVAILABLE.equals(action))
                 displayData(intent.getStringExtra(BluetoothLeService.EXTRA_DATA));
-            }
         }
     };
 
@@ -173,7 +154,6 @@ public class DeviceControlActivity extends Activity {
 
     private void clearUI() {
         mGattServicesList.setAdapter((SimpleExpandableListAdapter) null);
-        //mDataField.setText(R.string.no_data);
     }
 
     @Override
@@ -230,14 +210,11 @@ public class DeviceControlActivity extends Activity {
 
         temperatureDropDown.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             public void onItemSelected(AdapterView<?> parent, View view, int pos, long id) {
-                if (temperatureDropDown.getSelectedItem().toString().equals("Cool")) {
+                if (temperatureDropDown.getSelectedItem().toString().equals("Cool"))
                     startBackImage.setColorFilter(Color.argb(1, 0, 148, 254));
-                } else {
-                    startBackImage.setColorFilter(Color.RED);
-                }
+                else startBackImage.setColorFilter(Color.RED);
             }
-            public void onNothingSelected(AdapterView<?> parent) {
-            }
+            public void onNothingSelected(AdapterView<?> parent) {}
         });
 
         startFrontImage.setOnClickListener(new AdapterView.OnClickListener() {
@@ -273,19 +250,16 @@ public class DeviceControlActivity extends Activity {
                 int minuteToEllapse = rawTimeToEllapse % 60;
 
                 int numberToSend = direction * 100000 + hourToEllapse * 1000 + minuteToEllapse * 10 + meridiem;
-                System.out.println("DIZ STUFF: " + String.valueOf(numberToSend));
                 mBluetoothLeService.send(numberToSend);
                 ImageView rotate_image =(ImageView) findViewById(R.id.startButtonBack);
                 RotateAnimation rotate = new RotateAnimation(0, 360, Animation.RELATIVE_TO_SELF, 0.5f,  Animation.RELATIVE_TO_SELF, 0.5f);
                 rotate.setDuration(1000);
-                //CycleInterpolator cycle = new CycleInterpolator(2f);
                 rotate.setRepeatCount(Animation.INFINITE);
                 rotate.setInterpolator(new PathInterpolator(1f, 1f));
                 rotate_image.startAnimation(rotate);
 
             }
-            public void onNothingSelected(AdapterView<?> parent) {
-            }
+            public void onNothingSelected(AdapterView<?> parent) {}
         });
     }
 
@@ -314,32 +288,25 @@ public class DeviceControlActivity extends Activity {
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        if (mConnected) {
-        } else {
-        }
+        if (mConnected) {} else {}
         return true;
     }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        switch(item.getItemId()) {
-        }
         return super.onOptionsItemSelected(item);
     }
 
     private void updateConnectionState(final int resourceId) {
         runOnUiThread(new Runnable() {
             @Override
-            public void run() {
-                //mConnectionState.setText(resourceId);
-            }
+            public void run() {}
         });
     }
 
     private void displayData(String data) {
-        if (data != null) {
+        if (data != null)
             temperatureDisplay.setText(data + " °F");
-        }
     }
 
     // Demonstrates how to iterate through the supported GATT Services/Characteristics.

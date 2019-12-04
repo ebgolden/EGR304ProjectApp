@@ -11,9 +11,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.Handler;
-import android.view.animation.AccelerateInterpolator;
 import android.view.animation.Animation;
-import android.view.animation.CycleInterpolator;
 import android.view.animation.DecelerateInterpolator;
 import android.view.animation.PathInterpolator;
 import android.view.animation.RotateAnimation;
@@ -76,7 +74,6 @@ public class SplashScreen extends AppCompatActivity {
         if (this.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED)
             requestPermissions(new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, PERMISSION_REQUEST_COARSE_LOCATION);
 
-        //intent = new Intent(getApplicationContext(), MainActivity.class);
         intent = new Intent(getApplicationContext(), DeviceControlActivity.class);
 
         scanLeDevice(true);
@@ -88,7 +85,6 @@ public class SplashScreen extends AppCompatActivity {
                     ImageView rotate_image =(ImageView) findViewById(R.id.splashBack);
                     RotateAnimation rotate = new RotateAnimation(0, 360, Animation.RELATIVE_TO_SELF, 0.5f,  Animation.RELATIVE_TO_SELF, 0.5f);
                     rotate.setDuration(1000);
-                    //CycleInterpolator cycle = new CycleInterpolator(2f);
                     rotate.setRepeatCount(Animation.INFINITE);
                     rotate.setInterpolator(new PathInterpolator(1f, 1f));
                     rotate_image.startAnimation(rotate);
@@ -105,9 +101,7 @@ public class SplashScreen extends AppCompatActivity {
                         startActivity(intent);
                         finish();
                     }
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
+                } catch (InterruptedException e) {e.printStackTrace();}
             }
         };
         myThread.start();

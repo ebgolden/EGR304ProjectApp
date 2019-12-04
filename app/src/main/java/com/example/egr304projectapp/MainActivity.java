@@ -2,55 +2,34 @@ package com.example.egr304projectapp;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import android.Manifest;
-import android.app.AlertDialog;
-import android.app.ListActivity;
-import android.app.Service;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
-import android.bluetooth.BluetoothGattCallback;
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothManager;
-import android.bluetooth.BluetoothProfile;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
-import android.content.pm.PackageManager;
-import android.graphics.Color;
-import android.os.Binder;
 import android.os.Bundle;
-import android.os.Handler;
 import android.os.IBinder;
 import android.util.Log;
-import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.ViewGroup;
-import android.view.animation.Animation;
-import android.view.animation.PathInterpolator;
-import android.view.animation.RotateAnimation;
-import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
-import android.widget.BaseAdapter;
 import android.widget.ExpandableListView;
 import android.widget.ImageView;
 import android.widget.SimpleExpandableListAdapter;
 import android.widget.Spinner;
-import android.widget.SpinnerAdapter;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.UUID;
 
 public class MainActivity extends AppCompatActivity {
     private final static String TAG = DeviceControlActivity.class.getSimpleName();
@@ -256,31 +235,12 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        //getMenuInflater().inflate(R.menu.gatt_services, menu);
-        if (mConnected) {
-            //menu.findItem(R.id.menu_connect).setVisible(false);
-            //menu.findItem(R.id.menu_disconnect).setVisible(true);
-        } else {
-            //menu.findItem(R.id.menu_connect).setVisible(true);
-            //menu.findItem(R.id.menu_disconnect).setVisible(false);
-        }
+        if (mConnected) {} else {}
         return true;
-        //return super.onOptionsItemSelected(item);
     }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        /*switch(item.getItemId()) {
-            case R.id.menu_connect:
-                mBluetoothLeService.connect(mDeviceAddress);
-                return true;
-            case R.id.menu_disconnect:
-                mBluetoothLeService.disconnect();
-                return true;
-            case android.R.id.home:
-                onBackPressed();
-                return true;
-        }*/
         mBluetoothLeService.connect(mDeviceAddress);
         return true;
     }
@@ -288,16 +248,12 @@ public class MainActivity extends AppCompatActivity {
     private void updateConnectionState(final int resourceId) {
         runOnUiThread(new Runnable() {
             @Override
-            public void run() {
-                //mConnectionState.setText(resourceId);
-            }
+            public void run() {}
         });
     }
 
     private void displayData(String data) {
-        if (data != null) {
-            //mDataField.setText(data);
-        }
+        if (data != null) {}
     }
 
     private void displayGattServices(List<BluetoothGattService> gattServices) {
@@ -351,7 +307,6 @@ public class MainActivity extends AppCompatActivity {
                 new String[] {LIST_NAME, LIST_UUID},
                 new int[] { android.R.id.text1, android.R.id.text2 }
         );
-        //mGattServicesList.setAdapter(gattServiceAdapter);
     }
 
     private static IntentFilter makeGattUpdateIntentFilter() {
