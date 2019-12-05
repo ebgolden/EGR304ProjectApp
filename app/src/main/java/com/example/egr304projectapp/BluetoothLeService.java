@@ -319,13 +319,11 @@ public class BluetoothLeService extends Service {
                 }
 
                 String dataBinary = binary(data);
-                System.out.println("YEET - " + String.valueOf(dataBinary));
                 String dataString = String.valueOf(dataBinary);
 
                 for (int numberIndex = 0; numberIndex < dataString.length(); ++numberIndex) {
                     try {
                         int number = Integer.parseInt(String.valueOf(dataString.charAt(numberIndex)));
-                        System.out.println("YEET - " + String.valueOf(numberIndex) + ": " + String.valueOf(number));
                         alertLevel.setValue(number, BluetoothGattCharacteristic.FORMAT_UINT8, 0);
                         mBluetoothGatt.writeCharacteristic(alertLevel);
 
@@ -334,7 +332,6 @@ public class BluetoothLeService extends Service {
                 }
 
                 try {
-                    System.out.println("YEET - " + String.valueOf(dataString.length()) + ": " + String.valueOf(2));
                     alertLevel.setValue(2, BluetoothGattCharacteristic.FORMAT_UINT8, 0);
                     mBluetoothGatt.writeCharacteristic(alertLevel);
 

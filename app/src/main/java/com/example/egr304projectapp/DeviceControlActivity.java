@@ -17,6 +17,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.animation.Animation;
+import android.view.animation.DecelerateInterpolator;
 import android.view.animation.PathInterpolator;
 import android.view.animation.RotateAnimation;
 import android.widget.AdapterView;
@@ -67,6 +68,10 @@ public class DeviceControlActivity extends Activity {
     private Spinner meridiemDropDown;
     private ImageView startBackImage;
     private ImageView startFrontImage;
+
+    private static ImageView rotate_image;
+    private static RotateAnimation rotate;
+    private static int rawMilliseconds;
 
     // Code to manage Service lifecycle.
     private final ServiceConnection mServiceConnection = new ServiceConnection() {
@@ -125,7 +130,6 @@ public class DeviceControlActivity extends Activity {
                 @Override
                 public boolean onChildClick(ExpandableListView parent, View v, int groupPosition,
                                             int childPosition, long id) {
-                    System.out.println("HELLO THERE");
                     if (mGattCharacteristics != null) {
                         System.out.println("WOW: " + String.valueOf(id));
                         final BluetoothGattCharacteristic characteristic =
@@ -246,18 +250,55 @@ public class DeviceControlActivity extends Activity {
                 int rawCurrentTime = currentHour * 60 + currentMinute;
 
                 int rawTimeToEllapse = rawTime - rawCurrentTime;
-                int hourToEllapse = rawTimeToEllapse / 60;
-                int minuteToEllapse = rawTimeToEllapse % 60;
+                rawMilliseconds = rawTimeToEllapse * 60 * 1000;
+                if (rawMilliseconds > 0) {
+                    int hourToEllapse = rawTimeToEllapse / 60;
+                    int minuteToEllapse = rawTimeToEllapse % 60;
 
-                int numberToSend = direction * 100000 + hourToEllapse * 1000 + minuteToEllapse * 10 + meridiem;
-                mBluetoothLeService.send(numberToSend);
-                ImageView rotate_image =(ImageView) findViewById(R.id.startButtonBack);
-                RotateAnimation rotate = new RotateAnimation(0, 360, Animation.RELATIVE_TO_SELF, 0.5f,  Animation.RELATIVE_TO_SELF, 0.5f);
-                rotate.setDuration(1000);
-                rotate.setRepeatCount(Animation.INFINITE);
-                rotate.setInterpolator(new PathInterpolator(1f, 1f));
-                rotate_image.startAnimation(rotate);
+                    int numberToSend = direction * 100000 + hourToEllapse * 1000 + minuteToEllapse * 10 + meridiem;
+                    mBluetoothLeService.send(numberToSend);
+                    rotate_image = (ImageView) findViewById(R.id.startButtonBack);
+                    rotate = new RotateAnimation(0, 360, Animation.RELATIVE_TO_SELF, 0.5f, Animation.RELATIVE_TO_SELF, 0.5f);
+                    rotate.setDuration(1000);
+                    rotate.setRepeatCount(Animation.INFINITE);
+                    rotate.setInterpolator(new PathInterpolator(1f, 1f));
+                    rotate_image.startAnimation(rotate);
 
+                    Thread myThread = new Thread() {
+                        @Override
+                        public void run() {
+                            try {
+                                sleep(rawMilliseconds);
+                                rotate.setRepeatCount(0);
+                                rotate.setInterpolator(new DecelerateInterpolator());
+                                rotate_image.startAnimation(rotate);
+                                sleep(1000);
+                                interrupt();
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    };
+                    myThread.start();
+                }
+                else {
+                    Thread myThread = new Thread() {
+                        @Override
+                        public void run() {
+                            try {
+                                TextView splashError = (TextView) findViewById(R.id.splashError);
+                                splashError.setText("Time must be later than now");
+                                splashError.setVisibility(View.VISIBLE);
+                                sleep(1000);
+                                splashError.setText("");
+                                interrupt();
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    };
+                    myThread.start();
+                }
             }
             public void onNothingSelected(AdapterView<?> parent) {}
         });
